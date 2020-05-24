@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+    *{
+        margin: 0px;
+        padding: 0px;
+    }
+      .menu{
+          width: 100%;
+          height: 50px;
+          background-color: #222;
+          font-family: arial;
+      }     
+.menu ul{
+    list-style: none;
+    position: relative;
+}
+.menu ul li{
+    width: 150px;
+    float: left;
+}
+.menu a{
+    padding: 15px;
+    display: block;
+    text-decoration: none;
+    text-align: center;
+    background-color: #222;
+    color: white;
+}
+.menu ul ul{
+    position: absolute;
+    visibility: hidden;
+}
+.menu ul li:hover ul{
+visibility: visible;
+}
+.menu a:hover{
+    background-color: #f4f4f4;
+    color: #555;
+}
+.menu ul ul li{
+    float: none;
+    border-bottom: solid 1px #ccc;
+    
+}
+.menu ul ul li a{
+    background-color: #069;
+}
+</style>
+
+<body>
+
+    <nav class="menu">
+    <ul>
+        <li><a href=""> home</a></li>
+        <li><a href=""> serviços </a>
+        <ul>
+            <li><a href=""> criaçao de site</a></li>
+            <li><a href=""> arte visual</a></li>
+        </ul></li>
+        <li><a href=""> cursos</a> 
+            <ul>
+                <li><a href=""> java</a></li>
+                <li><a href=""> html</a></li>
+                <li><a href=""> css</a></li>
+            </ul></li>
+        <li><a href=""> contato </a></li>
+       
+    </ul>
+</nav>
+</body>
+</html>

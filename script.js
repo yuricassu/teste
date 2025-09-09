@@ -292,7 +292,7 @@ async function uploadToAPI(file) {
     formData.append('file', file);
     
     try {
-        const response = await fetch('http://localhost:5001/api/process-file', {
+        const response = await fetch('/api/process-file', {
             method: 'POST',
             body: formData
         });

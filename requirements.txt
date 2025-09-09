@@ -3,3 +3,6 @@ Flask-CORS==4.0.0
 Werkzeug==2.3.7
 reportlab==4.0.4
 streamlit==1.28.1
+gunicorn==21.2.0
+pandas==2.3.2
+pyarrow==21.0.0

@@ -9,7 +9,7 @@ pip3 install -r requirements.txt
 
 ### 2. Iniciar API
 ```bash
-python3 api.py
+python3 app.py
 ```
 
 ### 3. Abrir frontend

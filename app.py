@@ -1,24 +1,49 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory, redirect
 from flask_cors import CORS
-import os
-import tempfile
+from pathlib import Path
 from datetime import datetime
-from main import process_pbit  # Import your existing processing function
+import os
+from main import process_pbit  # Your existing function
 
-app = Flask(__name__)
+# -----------------------------
+# Flask app
+# -----------------------------
+app = Flask(__name__, static_folder=None)
 CORS(app)  # Enable CORS for frontend integration
 
-# Configuration
+# -----------------------------
+# Config
+# -----------------------------
 UPLOAD_FOLDER = 'temp_uploads'
 ALLOWED_EXTENSIONS = {'pbit'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+HTML_PATH = Path(__file__).parent / "power-bi-documentador/index.html"
+
 def allowed_file(filename):
-    """Check if file extension is allowed"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# -----------------------------
+# Frontend routes
+# -----------------------------
+@app.get("/")
+def root():
+    return redirect("/home", code=302)
+
+@app.get("/home")
+def home():
+    return app.response_class(HTML_PATH.read_text(encoding="utf-8"), mimetype="text/html")
+
+@app.get("/assets/<path:filename>")
+def assets(filename):
+    assets_dir = HTML_PATH.parent
+    return send_from_directory(assets_dir, filename)
+
+# -----------------------------
+# API routes
+# -----------------------------
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -30,70 +55,51 @@ def health_check():
 
 @app.route('/api/process-file', methods=['POST'])
 def process_file():
-    """
-    Process uploaded .pbit file using your existing main.py logic
-    Returns: PDF file for download
-    """
+    """Process uploaded .pbit file and return PDF"""
     try:
-        # Check if file was uploaded
         if 'file' not in request.files:
             return jsonify({'error': 'No file provided'}), 400
-        
+
         file = request.files['file']
-        
-        # Check if file was selected
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
-        
-        # Check file extension
         if not allowed_file(file.filename):
             return jsonify({'error': 'Only .pbit files are allowed'}), 400
-        
-        # Read file bytes
+
         file_bytes = file.read()
-        
-        try:
-            # Use your existing process_pbit function from main.py
-            pdf_buffer = process_pbit(file_bytes, file.filename)
-            
-            if pdf_buffer is None:
-                return jsonify({'error': 'Failed to process .pbit file'}), 500
-            
-            # Generate filename for download
-            download_filename = file.filename.replace('.pbit', '_erd_final.pdf')
-            
-            # Return the PDF file
-            pdf_buffer.seek(0)
-            return send_file(
-                pdf_buffer,
-                mimetype='application/pdf',
-                as_attachment=True,
-                download_name=download_filename
-            )
-                
-        except Exception as e:
-            print(f"Error processing .pbit file: {e}")
-            return jsonify({'error': f'Processing failed: {str(e)}'}), 500
-            
+        pdf_buffer = process_pbit(file_bytes, file.filename)
+        if pdf_buffer is None:
+            return jsonify({'error': 'Failed to process .pbit file'}), 500
+
+        download_filename = file.filename.replace('.pbit', '_erd_final.pdf')
+        pdf_buffer.seek(0)
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=download_filename
+        )
+
     except Exception as e:
-        print(f"Error in API endpoint: {e}")
+        print(f"Error processing .pbit file: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/test', methods=['GET'])
 def test_endpoint():
-    """Test endpoint to verify API is working"""
     return jsonify({
         'message': 'API is working!',
         'service': 'Power BI Documentador API',
         'endpoints': {
             'health': '/api/health',
             'process_file': '/api/process-file (POST)',
-            'test': '/api/test'
+            'test': '/api/test',
+            'frontend': '/home'
         },
         'timestamp': datetime.now().isoformat()
     })
 
+# -----------------------------
+# Run
+# -----------------------------
 if __name__ == '__main__':
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=8000)

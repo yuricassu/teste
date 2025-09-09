@@ -3,5 +3,5 @@ services:
     name: power-bi-documentador
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app -b 0.0.0.0:$PORT
+    startCommand: gunicorn app:app -b 0.0.0.0:10000
     plan: free

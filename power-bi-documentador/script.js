@@ -291,10 +291,8 @@ async function uploadToAPI(file) {
     const formData = new FormData();
     formData.append('file', file);
     
-    const API_URL = '${API_URL}/api/process-file';
-
     try {
-        const response = await fetch('/api/process-file', {
+        const response = await fetch('https://teste-aplicacao-yjf8.onrender.com/api/process-file', {
             method: 'POST',
             body: formData
         });

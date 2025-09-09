@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentador de Power BI</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-file-upload"></i> Documentador de Power BI</h1>
+            <p>Faça upload do seu arquivo .pbit</p>
+        </header>
+
+        <main class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <button class="btn btn-primary" id="selectFileBtn">
+                            <i class="fas fa-folder-open"></i> Escolher Arquivo .pbit
+                        </button>
+                        <input type="file" id="fileInput" accept=".pbit" style="display: none;">
+                        <p class="file-types">Apenas arquivos .pbit são aceitos</p>
+                    </div>
+                </div>
+
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-details">
+                        <i class="fas fa-file file-icon"></i>
+                        <div class="file-text">
+                            <h4 id="fileName">filename.ext</h4>
+                            <p id="fileSize">0 KB</p>
+                        </div>
+                        <button class="btn btn-remove" id="removeFileBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="upload-actions">
+                    <button class="btn btn-process" id="processBtn" disabled>
+                        <i class="fas fa-cog"></i> Process File
+                    </button>
+                </div>
+            </div>
+
+            <div class="progress-section" id="progressSection" style="display: none;">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Processing...</p>
+                </div>
+            </div>
+
+            <div class="result-section" id="resultSection" style="display: none;">
+                <div class="result-card">
+                    <div class="result-header">
+                        <i class="fas fa-check-circle success-icon"></i>
+                        <h3>Documentação gerada com sucesso!</h3>
+                    </div>
+                    <div class="result-actions">
+                        <button class="btn btn-download" id="downloadBtn">
+                            <i class="fas fa-download"></i> Baixar
+                        </button>
+                        <button class="btn btn-secondary" id="newFileBtn">
+                            <i class="fas fa-plus"></i> Adicionar outro pbit
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="error-section" id="errorSection" style="display: none;">
+                <div class="error-card">
+                    <div class="error-header">
+                        <i class="fas fa-exclamation-triangle error-icon"></i>
+                        <h3>Falha no Processamento</h3>
+                    </div>
+                    <p id="errorMessage">Ocorreu um erro ao processar seu arquivo.</p>
+                    <button class="btn btn-secondary" id="retryBtn">
+                        <i class="fas fa-redo"></i> Tentar Novamente
+                    </button>
+                </div>
+            </div>
+
+            <div class="file-type-error" id="fileTypeError" style="display: none;">
+                <div class="error-card">
+                    <div class="error-header">
+                        <i class="fas fa-file-excel error-icon"></i>
+                        <h3>Tipo de Arquivo Inválido</h3>
+                    </div>
+                    <p>Por favor, selecione apenas arquivos .pbit (Power BI Template).</p>
+                    <button class="btn btn-secondary" id="closeErrorBtn">
+                        <i class="fas fa-times"></i> Voltar
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+        </footer>
+    </div>
+
+    <script>
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const selectFileBtn = document.getElementById('selectFileBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileName');
+        const fileSizeText = document.getElementById('fileSize');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const processBtn = document.getElementById('processBtn');
+        const progressSection = document.getElementById('progressSection');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const resultSection = document.getElementById('resultSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const newFileBtn = document.getElementById('newFileBtn');
+        const errorSection = document.getElementById('errorSection');
+        const errorMessage = document.getElementById('errorMessage');
+        const retryBtn = document.getElementById('retryBtn');
+        const fileTypeError = document.getElementById('fileTypeError');
+        const closeErrorBtn = document.getElementById('closeErrorBtn');
+
+        // State variables
+        let selectedFile = null;
+        let isProcessing = false;
+
+        // Event listeners
+        selectFileBtn.addEventListener('click', (event) => {
+            // Prevent bubbling to uploadArea which also opens the picker
+            event.preventDefault();
+            event.stopPropagation();
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', handleFileSelect);
+        removeFileBtn.addEventListener('click', removeFile);
+        processBtn.addEventListener('click', processFile);
+        downloadBtn.addEventListener('click', downloadResult);
+        newFileBtn.addEventListener('click', resetToUpload);
+        retryBtn.addEventListener('click', resetToUpload);
+        closeErrorBtn.addEventListener('click', hideFileTypeError);
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        uploadArea.addEventListener('click', (event) => {
+            // If click originated from the select file button, do nothing here
+            if (event.target.closest('#selectFileBtn')) return;
+            fileInput.click();
+        });
+
+        // File handling functions
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                setSelectedFile(file);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            uploadArea.classList.add('dragover');
+
+            // Check if the dragged item is a file and if it's a .pbit file
+            if (event.dataTransfer.items && event.dataTransfer.items.length > 0) {
+                const item = event.dataTransfer.items[0];
+                if (item.kind === 'file') {
+                    // We can't check the filename during dragover, so we'll just show the normal state
+                    uploadArea.classList.remove('invalid');
+                }
+            }
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            uploadArea.classList.remove('dragover');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                // Validate file type before processing
+                if (!file.name.toLowerCase().endsWith('.pbit')) {
+                    showFileTypeError();
+                    return;
+                }
+                setSelectedFile(file);
+            }
+        }
+
+        function setSelectedFile(file) {
+            // Validate file type
+            if (!file.name.toLowerCase().endsWith('.pbit')) {
+                showFileTypeError();
+                return;
+            }
+
+            selectedFile = file;
+
+            // Update UI
+            fileName.textContent = file.name;
+            fileSizeText.textContent = formatFileSize(file.size);
+
+            // Show file info and enable process button
+            fileInfo.style.display = 'block';
+            processBtn.disabled = false;
+
+            // Hide other sections
+            hideAllSections();
+            showSection('upload-section');
+        }
+
+        function removeFile() {
+            selectedFile = null;
+            fileInput.value = '';
+
+            // Hide file info and disable process button
+            fileInfo.style.display = 'none';
+            processBtn.disabled = true;
+
+            // Reset to upload state
+            resetToUpload();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // File processing functions
+        async function processFile() {
+            if (!selectedFile || isProcessing) return;
+
+            isProcessing = true;
+            processBtn.disabled = true;
+
+            // Show progress section
+            hideAllSections();
+            showSection('progress-section');
+
+            try {
+                // Show initial progress
+                updateProgress(10);
+                progressText.textContent = 'Enviando arquivo para processamento...';
+
+                // Call the real Python API
+                const pdfBlob = await uploadToAPI(selectedFile);
+
+                // Show completion progress
+                updateProgress(100);
+                progressText.textContent = 'Processamento concluído!';
+
+                // Store the PDF blob for download
+                window.processedFileResult = pdfBlob;
+
+                // Small delay to show completion
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Show success result
+                hideAllSections();
+                showSection('result-section');
+
+            } catch (error) {
+                // Show error
+                hideAllSections();
+                showSection('error-section');
+                errorMessage.textContent = error.message || 'An error occurred while processing your file.';
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        async function simulateFileProcessing() {
+            return new Promise((resolve, reject) => {
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress >= 100) {
+                        progress = 100;
+                        clearInterval(interval);
+
+                        // Simulate API response delay
+                        setTimeout(() => {
+                            // Simulate 10% chance of error for demo purposes
+                            if (Math.random() < 0.1) {
+                                reject(new Error('API processing failed. Please try again.'));
+                            } else {
+                                resolve();
+                            }
+                        }, 500);
+                    }
+
+                    updateProgress(progress);
+                }, 200);
+            });
+        }
+
+        function updateProgress(percentage) {
+            progressFill.style.width = percentage + '%';
+
+            if (percentage < 30) {
+                progressText.textContent = 'Preparando arquivo...';
+            } else if (percentage < 60) {
+                progressText.textContent = 'Processando...';
+            } else if (percentage < 90) {
+                progressText.textContent = 'Finalizando...';
+            } else {
+                progressText.textContent = 'Concluído!';
+            }
+        }
+
+        // Download functionality
+        function downloadResult() {
+            if (!selectedFile || !window.processedFileResult) {
+                console.error('No file or processed result available');
+                return;
+            }
+
+            // Create download URL from the PDF blob
+            const url = URL.createObjectURL(window.processedFileResult);
+
+            // Create download link
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `documentacao_${selectedFile.name.replace('.pbit', '_erd_final.pdf')}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Clean up
+            URL.revokeObjectURL(url);
+        }
+
+        // Utility functions
+        function hideAllSections() {
+            const sections = ['upload-section', 'progress-section', 'result-section', 'error-section'];
+            sections.forEach(sectionId => {
+                const section = document.querySelector(`.${sectionId}`);
+                if (section) section.style.display = 'none';
+            });
+
+            // Also hide file type error
+            if (fileTypeError) fileTypeError.style.display = 'none';
+        }
+
+        function showSection(sectionClass) {
+            const section = document.querySelector(`.${sectionClass}`);
+            if (section) section.style.display = 'block';
+        }
+
+        function showFileTypeError() {
+            hideAllSections();
+            fileTypeError.style.display = 'block';
+        }
+
+        function hideFileTypeError() {
+            fileTypeError.style.display = 'none';
+            showSection('upload-section');
+        }
+
+        function resetToUpload() {
+            hideAllSections();
+            showSection('upload-section');
+
+            // Reset file input
+            fileInput.value = '';
+
+            // Clear selected file
+            selectedFile = null;
+
+            // Hide file info and disable process button
+            fileInfo.style.display = 'none';
+            processBtn.disabled = true;
+
+            // Reset progress
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Processing...';
+        }
+
+        // Real API integration function for Python backend
+        async function uploadToAPI(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('https://teste-aplicacao-yjf8.onrender.com/api/process-file', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                // Return the response as blob since it's a PDF file
+                return await response.blob();
+
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw new Error(`Upload failed: ${error.message}`);
+            }
+        }
+
+        // Initialize the application
+        function init() {
+            // Hide all sections except upload initially
+            hideAllSections();
+            showSection('upload-section');
+
+            // Ensure process button is disabled initially
+            processBtn.disabled = true;
+        }
+
+        // Start the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Add some visual feedback for better UX
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add loading states
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    if (!this.disabled) {
+                        this.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            this.style.transform = '';
+                        }, 150);
+                    }
+                });
+            });
+
+            // Add keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !isProcessing) {
+                    if (selectedFile && !processBtn.disabled) {
+                        processFile();
+                    }
+                }
+            });
+        });
+
+        // Export functions for potential external use
+        window.FileProcessor = {
+            setSelectedFile,
+            processFile,
+            downloadResult,
+            resetToUpload,
+            uploadToAPI
+        };
+    </script>
+
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header styles */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Upload section */
+        .upload-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        #closeErrorBtn {
+            margin-top: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #f0f4ff;
+            transform: scale(1.02);
+        }
+
+        .upload-area.dragover.invalid {
+            border-color: #dc3545;
+            background-color: #fff5f5;
+        }
+
+        .upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .upload-content h3 {
+            font-size: 1.5rem;
+            color: #333;
+            margin: 0;
+        }
+
+        .upload-content p {
+            color: #666;
+            margin: 0;
+        }
+
+        .file-types {
+            font-size: 0.9rem;
+            color: #667eea;
+            margin-top: 15px;
+            font-weight: 500;
+            background: #f0f4ff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid #e3e8ff;
+        }
+
+        /* File info */
+        .file-info {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 2px solid #e3e8ff;
+        }
+
+        .file-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .file-icon {
+            font-size: 2rem;
+            color: #667eea;
+        }
+
+        .file-text {
+            flex: 1;
+            text-align: left;
+        }
+
+        .file-text h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .file-text p {
+            margin: 0;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        .btn-process {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            font-size: 1.1rem;
+            padding: 15px 30px;
+        }
+
+        .btn-process:hover {
+            background: linear-gradient(135deg, #218838 0%, #1ea085 100%);
+        }
+
+        .btn-process:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-process:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            min-width: auto;
+        }
+
+        .btn-remove:hover {
+            background: #c82333;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);
+            color: white;
+            font-size: 1.1rem;
+            padding: 15px 30px;
+        }
+
+        .btn-download:hover {
+            background: linear-gradient(135deg, #138496 0%, #1ea085 100%);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        /* Progress section */
+        .progress-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .progress-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 6px;
+        }
+
+        .progress-text {
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Result section */
+        .result-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .result-header {
+            margin-bottom: 30px;
+        }
+
+        .success-icon {
+            font-size: 3rem;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+
+        .result-header h3 {
+            color: #333;
+            margin: 0;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Error section */
+        .error-section,
+        .file-type-error {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .error-header {
+            margin-bottom: 20px;
+        }
+
+        .error-icon {
+            font-size: 3rem;
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+
+        .error-header h3 {
+            color: #333;
+            margin: 0;
+        }
+
+        #errorMessage {
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: white;
+            opacity: 0.8;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .upload-section,
+            .progress-section,
+            .result-section,
+            .error-section {
+                padding: 30px 20px;
+            }
+
+            .upload-area {
+                padding: 40px 20px;
+            }
+
+            .upload-icon {
+                font-size: 3rem;
+            }
+
+            .result-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .upload-section,
+            .progress-section,
+            .result-section,
+            .error-section {
+                padding: 25px 15px;
+            }
+
+            .upload-area {
+                padding: 30px 15px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .upload-section,
+        .progress-section,
+        .result-section,
+        .error-section {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .file-info {
+            animation: slideIn 0.4s ease-out;
+        }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .progress-text {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</body>
+
+</html>

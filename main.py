@@ -1,7 +1,6 @@
 # Instalar dependências (rodar apenas uma vez)
 # !pip install streamlit reportlab --quiet
 
-import streamlit as st
 import zipfile
 import json
 from io import BytesIO
@@ -248,21 +247,3 @@ def process_pbit(file_bytes, filename):
     doc.build(story)
     pdf_buffer.seek(0)
     return pdf_buffer
-
-# -----------------------------
-# Streamlit UI
-# -----------------------------
-# st.title("Gerador de Documentação Power BI (ERD)")
-# uploaded_file = st.file_uploader("Escolha um arquivo .pbit", type=["pbit"])
-
-# if uploaded_file:
-#     with st.spinner("Processando PBIT e gerando PDF..."):
-#         pdf_bytes = process_pbit(uploaded_file.read(), uploaded_file.name)
-#         if pdf_bytes:
-#             st.success("PDF gerado com sucesso!")
-#             st.download_button(
-#                 label="Baixar PDF",
-#                 data=pdf_bytes,
-#                 file_name=uploaded_file.name.replace(".pbit","_erd_final.pdf"),
-#                 mime="application/pdf"
-#             )

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentador de Power BI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-file-upload"></i> Documentador de Power BI</h1>
+            <p>Faça upload do seu arquivo .pbit</p>
+        </header>
+
+        <main class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <button class="btn btn-primary" id="selectFileBtn">
+                            <i class="fas fa-folder-open"></i> Escolher Arquivo .pbit
+                        </button>
+                        <input type="file" id="fileInput" accept=".pbit" style="display: none;">
+                        <p class="file-types">Apenas arquivos .pbit são aceitos</p>
+                    </div>
+                </div>
+
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-details">
+                        <i class="fas fa-file file-icon"></i>
+                        <div class="file-text">
+                            <h4 id="fileName">filename.ext</h4>
+                            <p id="fileSize">0 KB</p>
+                        </div>
+                        <button class="btn btn-remove" id="removeFileBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="upload-actions">
+                    <button class="btn btn-process" id="processBtn" disabled>
+                        <i class="fas fa-cog"></i> Process File
+                    </button>
+                </div>
+            </div>
+
+            <div class="progress-section" id="progressSection" style="display: none;">
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">Processing...</p>
+                </div>
+            </div>
+
+            <div class="result-section" id="resultSection" style="display: none;">
+                <div class="result-card">
+                    <div class="result-header">
+                        <i class="fas fa-check-circle success-icon"></i>
+                        <h3>Documentação gerada com sucesso!</h3>
+                    </div>
+                    <div class="result-actions">
+                        <button class="btn btn-download" id="downloadBtn">
+                            <i class="fas fa-download"></i> Baixar
+                        </button>
+                        <button class="btn btn-secondary" id="newFileBtn">
+                            <i class="fas fa-plus"></i> Adicionar outro pbit
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+                    <div class="error-section" id="errorSection" style="display: none;">
+            <div class="error-card">
+                <div class="error-header">
+                    <i class="fas fa-exclamation-triangle error-icon"></i>
+                    <h3>Falha no Processamento</h3>
+                </div>
+                <p id="errorMessage">Ocorreu um erro ao processar seu arquivo.</p>
+                <button class="btn btn-secondary" id="retryBtn">
+                    <i class="fas fa-redo"></i> Tentar Novamente
+                </button>
+            </div>
+        </div>
+        
+        <div class="file-type-error" id="fileTypeError" style="display: none;">
+            <div class="error-card">
+                <div class="error-header">
+                    <i class="fas fa-file-excel error-icon"></i>
+                    <h3>Tipo de Arquivo Inválido</h3>
+                </div>
+                <p>Por favor, selecione apenas arquivos .pbit (Power BI Template).</p>
+                <button class="btn btn-secondary" id="closeErrorBtn">
+                    <i class="fas fa-times"></i> Voltar
+                </button>
+            </div>
+        </div>
+        </main>
+
+        <footer class="footer">
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

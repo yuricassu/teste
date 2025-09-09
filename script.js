@@ -291,6 +291,8 @@ async function uploadToAPI(file) {
     const formData = new FormData();
     formData.append('file', file);
     
+    const API_URL = '${API_URL}/api/process-file';
+
     try {
         const response = await fetch('/api/process-file', {
             method: 'POST',

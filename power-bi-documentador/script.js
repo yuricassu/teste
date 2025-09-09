@@ -292,7 +292,7 @@ async function uploadToAPI(file) {
     formData.append('file', file);
     
     try {
-        const response = await fetch('https://teste-aplicacao-yjf8.onrender.com/api/process-file', {
+        const response = await fetch('https://teste-1-bq2b.onrender.com/api/process-file', {
             method: 'POST',
             body: formData
         });

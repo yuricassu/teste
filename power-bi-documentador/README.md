@@ -16,4 +16,4 @@ python3 app.py
 Abra `index.html` no navegador
 
 ## Pronto!
-Agora você pode fazer upload de arquivos .pbit e baixar a documentação em PDF.
+Agora você pode fazer upload de arquivos .pbit e baixar a documentação em
